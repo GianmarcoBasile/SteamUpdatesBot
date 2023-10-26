@@ -10,6 +10,12 @@ import json
 bot_instance = Bot()
 application = Application.builder().token(bot_instance.getToken()).build()
 redis_instance = redis.Redis(host='localhost', port=6379, decode_responses=True)
+r = requests.get('https://api.steampowered.com/ISteamApps/GetAppList/v0002/')
+app_list_tmp = r.json()['applist']['apps']
+app_list = {}
+for x in app_list_tmp:
+    app_list.update({x['appid']: x['name']})
+print(app_list.get(730))
 
 # http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=440&count=3&maxlength=300&format=json
 async def setGame(update, context):
