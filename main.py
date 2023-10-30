@@ -11,14 +11,14 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
-print('os.environ:', os.environ['API_KEY'])
-bot_instance = Bot(os.environ['API_KEY'])
+API_KEY = os.environ['API_KEY']
+bot_instance = Bot(API_KEY)
 redis_instance = redis.Redis(host='localhost', port=6379, decode_responses=True)
 r = requests.get('https://api.steampowered.com/ISteamApps/GetAppList/v0002/')
 app_list_tmp = r.json()['applist']['apps']
 app_list = {}
 for x in app_list_tmp:
-    app_list.update({x['appid']: x['name']})
+    app_list.update({x['appid']: x['name'].lower()})
 
 def getGameIdByName(name):
     for x in app_list:
@@ -31,15 +31,42 @@ async def setGame(update, context):
     # TEST: redis_instance.set('gianmarco', json.dumps({'games': '1234'}))
     try:
         if context.args:
-            user_record = redis_instance.get(update.message.from_user['username'])
-            if not user_record:
-                games = {'games_id': {0: context.args[0]}}
-                redis_instance.set(update.message.from_user['username'], json.dumps(games))
-            else:                
-                games = json.loads(redis_instance.get(update.message.from_user['username']))
-                games['games_id'].update({len(games['games_id']): context.args[0]})
-                redis_instance.set(update.message.from_user['username'], json.dumps(games))
-            await update.message.reply_text('Game set to ' + games['games_id'])
+            games = []
+            game_name = ' '.join(context.args).lower()
+            if game_name in app_list.values():
+                user_record = redis_instance.get(update.message.from_user['username'])
+                games_json = {'games': {0: game_name}}
+                games = list(games_json['games'].values()) 
+                redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
+                await update.message.reply_text('Games set to ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
+            else:
+                await update.message.reply_text('Game not found')
+        else:
+            await update.message.reply_text('La sintassi del comando prevede un argomento: /setgame <game_id>')
+    except Exception as e:
+        print(e)
+
+async def addGame(update, context):
+    try:
+        if context.args:
+            game_name = ' '.join(context.args).lower()
+            if game_name in app_list.values():
+                user_record = redis_instance.get(update.message.from_user['username'])
+                if not user_record:
+                    games_json = {'games': {0: game_name}}
+                    redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
+                else:
+                    games = []
+                    games_json = json.loads(redis_instance.get(update.message.from_user['username']))
+                    if game_name not in games_json['games'].values():
+                        games_json['games'].update({len(games_json['games']): game_name})
+                        games = list(games_json['games'].values()) 
+                        redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
+                        await update.message.reply_text('Games set to ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
+                    else:
+                        await update.message.reply_text('Game already in your favorites')
+            else:
+                await update.message.reply_text('Game not found')
         else:
             await update.message.reply_text('La sintassi del comando prevede un argomento: /setgame <game_id>')
     except Exception as e:
@@ -66,16 +93,17 @@ async def setGame(update, context):
 #     return r.json()
 
     
-async def getGame(update, context):
-    games_id = redis_instance.hgetall(update.message.from_user)['games_id']
-    print('games_id:', game_id)
-    await update.message.reply_text('game_id -> ' + game_id)
+async def getGames(update, context):
+    games = list(json.loads(redis_instance.get(update.message.from_user['username']))['games'].values())
+    print(games)
+    await update.message.reply_text('Favorite Games: ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
 
 def main():
     # Commands
     bot_instance.application.add_handler(CommandHandler('setgame', setGame))
     # application.add_handler(CommandHandler('getnews', getNews))
-    bot_instance.application.add_handler(CommandHandler('getgame', getGame))
+    bot_instance.application.add_handler(CommandHandler('addgame', addGame))
+    bot_instance.application.add_handler(CommandHandler('getgames', getGames))
     # application.job_queue.run_repeating(getNews, interval=10, first=0)
 
     # Run bot
