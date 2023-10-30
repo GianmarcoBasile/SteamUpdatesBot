@@ -19,33 +19,36 @@ app_list_tmp = r.json()['applist']['apps']
 app_list = {}
 for x in app_list_tmp:
     app_list.update({x['appid']: x['name']})
-print(app_list.get(730))
+
+def getGameIdByName(name):
+    for x in app_list:
+        if app_list[x] == name:
+            return x
+    return None
 
 # http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=440&count=3&maxlength=300&format=json
 async def setGame(update, context):
     # TEST: redis_instance.set('gianmarco', json.dumps({'games': '1234'}))
-    # try:
+    try:
         if context.args:
             user_record = redis_instance.get(update.message.from_user['username'])
             if not user_record:
-                print('user record not found')
                 games = {'games_id': {0: context.args[0]}}
                 redis_instance.set(update.message.from_user['username'], json.dumps(games))
             else:                
                 games = json.loads(redis_instance.get(update.message.from_user['username']))
                 games['games_id'].update({len(games['games_id']): context.args[0]})
                 redis_instance.set(update.message.from_user['username'], json.dumps(games))
-                print('games:', games)
-            # await update.message.reply_text('Game set to ' + games['games_id'])
+            await update.message.reply_text('Game set to ' + games['games_id'])
         else:
             await update.message.reply_text('La sintassi del comando prevede un argomento: /setgame <game_id>')
-    # except Exception as e:
-    #     print(e)
+    except Exception as e:
+        print(e)
 
 # async def getNews(update, context):
 #     global game_id
 #     if context.args:
-#         r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + context.args[0] + '&count=3&maxlength=300&format=json')
+#         r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + getGameIdByName(context.args[0]) + '&count=3&maxlength=300&format=json')
 #         print(r.json())
 #         await update.message.reply_text('News for game ' + context.args[0])
 #     elif not context.args and game_id != '':
