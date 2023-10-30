@@ -1,9 +1,11 @@
+"""Module providing commands for the bot"""
+
 from telegram.ext import *
-from database import Database
+from database import initialize_db as db
 from utils import getGamesList
 import json
 
-redis_instance = Database('localhost', 6379).db
+redis_instance = db('localhost', 6379)
 app_list = getGamesList()
 
 async def start(update, context):
@@ -80,7 +82,6 @@ async def clearGamesList(update, context):
 #     print(r.json())
 #     return r.json()
 
-    
 async def getFavoriteGames(update, context):
     games = list(json.loads(redis_instance.get(update.message.from_user['username']))['games'].values())
     print(games)
