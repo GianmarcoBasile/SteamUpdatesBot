@@ -1,4 +1,5 @@
 from telegram.ext import *
+import os
 from bot import Bot
 import requests
 import re
@@ -6,9 +7,12 @@ import asyncio
 import time
 import redis
 import json
+from dotenv import load_dotenv
 
-bot_instance = Bot()
-application = Application.builder().token(bot_instance.getToken()).build()
+
+load_dotenv()
+print('os.environ:', os.environ['API_KEY'])
+bot_instance = Bot(os.environ['API_KEY'])
 redis_instance = redis.Redis(host='localhost', port=6379, decode_responses=True)
 r = requests.get('https://api.steampowered.com/ISteamApps/GetAppList/v0002/')
 app_list_tmp = r.json()['applist']['apps']
@@ -66,13 +70,13 @@ async def getGame(update, context):
 
 def main():
     # Commands
-    application.add_handler(CommandHandler('setgame', setGame))
+    bot_instance.application.add_handler(CommandHandler('setgame', setGame))
     # application.add_handler(CommandHandler('getnews', getNews))
-    application.add_handler(CommandHandler('getgame', getGame))
+    bot_instance.application.add_handler(CommandHandler('getgame', getGame))
     # application.job_queue.run_repeating(getNews, interval=10, first=0)
 
     # Run bot
-    application.run_polling(1.0)
+    bot_instance.application.run_polling(1.0)
 
 
 if __name__ == '__main__':
