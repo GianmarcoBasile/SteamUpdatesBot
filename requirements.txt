@@ -1,0 +1,6 @@
+os
+telegram.ext
+dotenv
+redis
+json
+requests
