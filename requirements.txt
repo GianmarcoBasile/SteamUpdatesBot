@@ -1,5 +1,5 @@
 python-telegram-bot
-dotenv
+python-dotenv
 redis
 json
 requests
