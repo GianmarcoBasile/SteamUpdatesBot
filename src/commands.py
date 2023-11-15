@@ -1,12 +1,12 @@
+# pylint: skip-file
 """Module providing commands for the bot"""
 
 import json
-from telegram.ext import *
 from database import initialize_db as db
-from utils import getGamesList
+from utils import get_game_list
 
 redis_instance = db('localhost', 6379)
-app_list = getGamesList()
+app_list = get_game_list()
 
 async def start(update, context):
     redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))

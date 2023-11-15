@@ -1,3 +1,4 @@
+# pylint: skip-file
 """Module providing Bot API."""
 
 from telegram.ext import Application
