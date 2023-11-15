@@ -1,9 +1,9 @@
 """Module providing commands for the bot"""
 
+import json
 from telegram.ext import *
 from database import initialize_db as db
 from utils import getGamesList
-import json
 
 redis_instance = db('localhost', 6379)
 app_list = getGamesList()

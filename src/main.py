@@ -1,8 +1,8 @@
 """Main module of the BOT"""
 
 import os
-from telegram.ext import CommandHandler
 from dotenv import load_dotenv
+from telegram.ext import CommandHandler
 from bot import Bot
 from commands import start, setGame, addGame, getFavoriteGames, clearGamesList
 
