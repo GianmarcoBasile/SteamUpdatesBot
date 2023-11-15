@@ -1,4 +1,4 @@
-telegram.ext
+python-telegram-bot
 dotenv
 redis
 json
