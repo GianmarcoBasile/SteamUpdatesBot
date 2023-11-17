@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from telegram.ext import CommandHandler
 from bot import Bot
-from commands import start, setGame, addGame, getFavoriteGames, clearGamesList
+from commands import start, addGame, getFavoriteGames, clearGamesList
 
 load_dotenv()
 API_KEY = os.environ['API_KEY']
