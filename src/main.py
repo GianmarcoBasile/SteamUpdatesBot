@@ -16,7 +16,6 @@ def main():
     """Main function which runs the bot and adds the handlers"""
     # Commands
     bot_instance.application.add_handler(CommandHandler('start', start))
-    bot_instance.application.add_handler(CommandHandler('setgame', setGame))
     # application.add_handler(CommandHandler('getnews', getNews))
     bot_instance.application.add_handler(CommandHandler('addgame', addGame))
     bot_instance.application.add_handler(CommandHandler('favoritegames', getFavoriteGames))

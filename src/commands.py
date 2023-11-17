@@ -12,25 +12,6 @@ async def start(update, context):
     redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
     await update.message.reply_text('Benvenuto su Steam News Bot!')
 
-async def setGame(update, context):
-    # TEST: redis_instance.set('gianmarco', json.dumps({'games': '1234'}))
-    try:
-        if context.args:
-            games = []
-            game_name = ' '.join(context.args).lower()
-            if game_name in app_list.values():
-                user_record = redis_instance.get(update.message.from_user['username'])
-                games_json = {'games': {0: game_name}}
-                games = list(games_json['games'].values()) 
-                redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
-                await update.message.reply_text('Games set to ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
-            else:
-                await update.message.reply_text('Game not found')
-        else:
-            await update.message.reply_text('La sintassi del comando prevede un argomento: /setgame <game_id>')
-    except Exception as e:
-        print(e)
-
 async def addGame(update, context):
     try:
         if context.args:
