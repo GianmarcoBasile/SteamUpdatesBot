@@ -36,7 +36,7 @@ async def addGame(update, context):
             else:
                 await update.message.reply_text('Game not found')
         else:
-            await update.message.reply_text(required_argument + '/addgame <game_id>')
+            await update.message.reply_text(required_argument + '/addgame <game_name>')
     except Exception as e:
         print(e)
 
