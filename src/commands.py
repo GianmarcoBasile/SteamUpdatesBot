@@ -35,7 +35,7 @@ async def addGame(update, context):
             else:
                 await update.message.reply_text('Game not found')
         else:
-            await update.message.reply_text('La sintassi del comando prevede un argomento: /setgame <game_id>')
+            await update.message.reply_text('La sintassi del comando prevede un argomento: /addgame <game_id>')
     except Exception as e:
         print(e)
     

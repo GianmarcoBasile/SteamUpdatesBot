@@ -19,6 +19,7 @@ def main():
     # application.add_handler(CommandHandler('getnews', getNews))
     bot_instance.application.add_handler(CommandHandler('addgame', addGame))
     bot_instance.application.add_handler(CommandHandler('favoritegames', getFavoriteGames))
+    #il nome del comando nel bot è favoritegame, da modificare in favoritegames
     bot_instance.application.add_handler(CommandHandler('cleargameslist', clearGamesList))
     # application.job_queue.run_repeating(getNews, interval=10, first=0)
     # Run bot
