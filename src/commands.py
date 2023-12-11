@@ -7,10 +7,11 @@ from utils import get_game_list
 
 redis_instance = db('localhost', 6379)
 app_list = get_game_list()
+required_argument = 'This command requires one argument: '
 
 async def start(update, context):
     redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
-    await update.message.reply_text('Benvenuto su Steam News Bot!')
+    await update.message.reply_text('Welcome to Steam News Bot!')
 
 async def addGame(update, context):
     try:
@@ -35,7 +36,7 @@ async def addGame(update, context):
             else:
                 await update.message.reply_text('Game not found')
         else:
-            await update.message.reply_text('La sintassi del comando prevede un argomento: /addgame <game_id>')
+            await update.message.reply_text(required_argument + '/addgame <game_id>')
     except Exception as e:
         print(e)
 
@@ -44,7 +45,7 @@ async def deleteGame(update, context):
         game_name = ' '.join(context.args).lower()
         games_list = json.loads(redis_instance.get(update.message.from_user['username']))['games']
         if not games_list:
-            await update.message.reply_text('La lista dei giochi preferiti è vuota')
+            await update.message.reply_text('The favourite game list is empty')
         else:
             games_json = json.loads(redis_instance.get(update.message.from_user['username']))
             if game_name in games_json['games'].values():
@@ -56,11 +57,11 @@ async def deleteGame(update, context):
                 for key, value in games_json['games'].items():
                     new_games_json['games'].update({len(new_games_json['games']): value})
                 redis_instance.set(update.message.from_user['username'], json.dumps(new_games_json))
-                await update.message.reply_text('Gioco ' + str(game_name)+ ' eliminato dalla lista ')
+                await update.message.reply_text('Game ' + str(game_name)+ ' removed from the list')
             else:
-                await update.message.reply_text('Il gioco non è nella lista, impossibile eliminarlo')
+                await update.message.reply_text('The game is not in the list')
     else:
-        await update.message.reply_text('La sintassi del comando richiede un argomento: /deletegame <game_name>')
+        await update.message.reply_text(required_argument + '/deletegame <game_name>')
     
     
 async def clearGamesList(update, context):
