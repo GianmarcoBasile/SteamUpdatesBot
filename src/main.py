@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from telegram.ext import CommandHandler
 from bot import Bot
-from commands import start, addGame, getFavoriteGames, deleteGame,clearGamesList
+from commands import start, addGame, getFavoriteGames, deleteGame, clearGamesList, getNews
 
 load_dotenv()
 API_KEY = os.environ['API_KEY']
@@ -16,7 +16,7 @@ def main():
     """Main function which runs the bot and adds the handlers"""
     # Commands
     bot_instance.application.add_handler(CommandHandler('start', start))
-    # application.add_handler(CommandHandler('getnews', getNews))
+    bot_instance.application.add_handler(CommandHandler('getnews', getNews))
     bot_instance.application.add_handler(CommandHandler('addgame', addGame))
     bot_instance.application.add_handler(CommandHandler('favoritegames', getFavoriteGames))
     #il nome del comando nel bot è favoritegame, da modificare in favoritegames

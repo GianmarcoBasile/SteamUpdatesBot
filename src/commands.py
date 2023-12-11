@@ -2,8 +2,9 @@
 """Module providing commands for the bot"""
 
 import json
+import requests
 from database import initialize_db as db
-from utils import get_game_list
+from utils import get_game_list, get_game_id_by_name
 
 redis_instance = db('localhost', 6379)
 app_list = get_game_list()
@@ -68,18 +69,11 @@ async def clearGamesList(update, context):
     redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
     await update.message.reply_text('Game list cleared')
 
-# async def getNews(update, context):
-#     global game_id
-#     if context.args:
-#         r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + getGameIdByName(context.args[0]) + '&count=3&maxlength=300&format=json')
-#         print(r.json())
-#         await update.message.reply_text('News for game ' + context.args[0])
-#     elif not context.args and game_id != '':
-#         r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + game_id + '&count=3&maxlength=300&format=json')
-#         print(r.json())
-#         await update.message.reply_text('News for game ' + game_id)
-#     else:
-#         await update.message.reply_text('La sintassi del comando prevede che tu abbia prima settato un gioco oppure che tu inserisca un argomento: /getnews <game_id>')
+async def getNews(update, context):
+    games = json.loads(redis_instance.get(update.message.from_user['username']))['games']
+    for game in games.values():
+        r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + str(get_game_id_by_name(game)) + '&count=3&maxlength=300&format=json')
+        print(r.json())
 
 # async def getNews(context):
 #     global game_id

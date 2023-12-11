@@ -14,7 +14,7 @@ def get_game_list():
 def get_game_id_by_name(name):
     """Function that get the game id from the game name."""
     app_list = get_game_list()
-    for x in app_list.items():
+    for x in app_list.keys():
         if app_list[x] == name:
             return x
     return None
