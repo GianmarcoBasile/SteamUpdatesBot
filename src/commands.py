@@ -8,7 +8,7 @@ from utils import get_game_list, get_game_id_by_name
 
 redis_instance = db('localhost', 6379)
 app_list = get_game_list()
-required_argument = 'This command requires one argument: '
+syntax_error = 'The correct syntax for this command is: '
 
 async def start(update, context):
     redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
@@ -70,10 +70,13 @@ async def clearGamesList(update, context):
     await update.message.reply_text('Game list cleared')
 
 async def getNews(update, context):
-    games = json.loads(redis_instance.get(update.message.from_user['username']))['games']
-    for game in games.values():
-        r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + str(get_game_id_by_name(game)) + '&count=3&maxlength=300&format=json')
-        print(r.json())
+    if not context.args:
+        games = json.loads(redis_instance.get(update.message.from_user['username']))['games']
+        for game in games.values():
+            r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + str(get_game_id_by_name(game)) + '&count=3&maxlength=300&format=json')
+            print(r.json())
+    else:
+        await update.message.reply_text(syntax_error + '/getnews')
 
 # async def getNews(context):
 #     global game_id
