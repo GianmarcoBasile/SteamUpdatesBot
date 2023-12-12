@@ -1,6 +1,7 @@
 """Main module of the BOT"""
 
 import os
+import pymongo
 from dotenv import load_dotenv
 from telegram.ext import CommandHandler
 from bot import Bot

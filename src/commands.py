@@ -6,12 +6,12 @@ import requests
 from database import initialize_db as db
 from utils import get_game_list, get_game_id_by_name
 
-redis_instance = db('localhost', 6379)
+mongo_instance = db('mongodb://0.0.0.0', 27017)
 app_list = get_game_list()
 syntax_error = 'The correct syntax for this command is: '
 
 async def start(update, context):
-    redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
+    mongo_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
     await update.message.reply_text('Welcome to Steam News Bot!')
 
 async def addGame(update, context):
@@ -72,9 +72,11 @@ async def clearGamesList(update, context):
 async def getNews(update, context):
     if not context.args:
         games = json.loads(redis_instance.get(update.message.from_user['username']))['games']
+        games_news_record = json.loads(redis_instance.get(update.message.from_user['username']))['games']
         for game in games.values():
             r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + str(get_game_id_by_name(game)) + '&count=3&maxlength=300&format=json')
             print(r.json())
+
     else:
         await update.message.reply_text(syntax_error + '/getnews')
 
