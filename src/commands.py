@@ -6,12 +6,15 @@ import requests
 from database import initialize_db as db
 from utils import get_game_list, get_game_id_by_name
 
-mongo_instance = db('mongodb://0.0.0.0', 27017)
+mongo_instance = db('mongodb://localhost', 27017)
 app_list = get_game_list()
 syntax_error = 'The correct syntax for this command is: '
 
 async def start(update, context):
-    mongo_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
+    sender = update.message.from_user['username']
+    if not mongo_instance['USERS'][sender].find_one({'chat_id': update.message.chat_id}):
+        mongo_instance['USERS'][sender].insert_one({'chat_id': update.message.chat_id})
+        mongo_instance['GAMES']['games'].insert_one({'user': sender, 'games': {}})
     await update.message.reply_text('Welcome to Steam News Bot!')
 
 async def addGame(update, context):
@@ -19,48 +22,35 @@ async def addGame(update, context):
         if context.args:
             game_name = ' '.join(context.args).lower()
             if game_name in app_list.values():
-                games_list = json.loads(redis_instance.get(update.message.from_user['username']))['games']
-                if not games_list:
-                    games_json = {'games': {0: game_name}}
-                    redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
-                    await update.message.reply_text('Games set to ' + game_name)
-                else:
-                    games = []
-                    games_json = json.loads(redis_instance.get(update.message.from_user['username']))
-                    if game_name not in games_json['games'].values():
-                        games_json['games'].update({len(games_json['games']): game_name})
-                        games = list(games_json['games'].values()) 
-                        redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
-                        await update.message.reply_text('Games set to ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
+                games_record = mongo_instance['GAMES']['games'].find_one({'user': update.message.from_user['username']})
+                print(games_record)
+                if game_name not in games_record['games'].values():
+                    if(games_record['games'] == {}):
+                        games_record['games'] = {'0': game_name}
                     else:
-                        await update.message.reply_text('Game already in your favorites')
+                        games_record['games'].update({str(int(max(games_record['games']))+1): game_name})
+                    print(games_record)
+                    mongo_instance['GAMES']['games'].update_one({'user': update.message.from_user['username']}, {'$set': games_record})
+                    await update.message.reply_text('Game ' + str(game_name) + ' added to the list')
+                else:
+                    await update.message.reply_text('The game is already in the list')
             else:
-                await update.message.reply_text('Game not found')
+                await update.message.reply_text('The game is not a steam game')
         else:
-            await update.message.reply_text(required_argument + '/addgame <game_name>')
+            await update.message.reply_text(syntax_error + '/addgame <game_name>')
     except Exception as e:
         print(e)
 
 async def deleteGame(update, context):    
     if context.args:
         game_name = ' '.join(context.args).lower()
-        games_list = json.loads(redis_instance.get(update.message.from_user['username']))['games']
-        if not games_list:
-            await update.message.reply_text('The favourite game list is empty')
+        games_record = mongo_instance['GAMES']['games'].find_one({'user': update.message.from_user['username']})
+        if game_name in games_record['games'].values():
+            games_record['games'].pop(str(list(games_record['games'].values()).index(game_name)))
+            mongo_instance['GAMES']['games'].update_one({'user': update.message.from_user['username']}, {'$set': games_record})
+            await update.message.reply_text('Game ' + str(game_name) + ' deleted from the list')
         else:
-            games_json = json.loads(redis_instance.get(update.message.from_user['username']))
-            if game_name in games_json['games'].values():
-                for key, value in games_json['games'].items():
-                    if value == game_name:
-                        games_json['games'].pop(key)
-                        break                
-                new_games_json = {'games':{}}
-                for key, value in games_json['games'].items():
-                    new_games_json['games'].update({len(new_games_json['games']): value})
-                redis_instance.set(update.message.from_user['username'], json.dumps(new_games_json))
-                await update.message.reply_text('Game ' + str(game_name)+ ' removed from the list')
-            else:
-                await update.message.reply_text('The game is not in the list')
+            await update.message.reply_text('The game is not in the list')
     else:
         await update.message.reply_text(required_argument + '/deletegame <game_name>')
     
