@@ -18,3 +18,9 @@ def get_game_id_by_name(name):
         if app_list[x] == name:
             return x
     return None
+
+def get_game_name_by_id(id):
+    """Function that get the game name from the id."""
+    app_list = get_game_list()
+    return app_list[id]
+    

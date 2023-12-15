@@ -5,6 +5,8 @@ import json
 import requests
 from database import initialize_db as db
 from utils import get_game_list, get_game_id_by_name
+from news_parser import parser
+from telegram.constants import ParseMode
 
 mongo_instance = db('mongodb://localhost', 27017)
 app_list = get_game_list()
@@ -52,20 +54,39 @@ async def deleteGame(update, context):
         else:
             await update.message.reply_text('The game is not in the list')
     else:
-        await update.message.reply_text(required_argument + '/deletegame <game_name>')
+        await update.message.reply_text(syntax_error + '/deletegame <game_name>')
     
     
 async def clearGamesList(update, context):
-    redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
-    await update.message.reply_text('Game list cleared')
+    if not context.args:
+        games_record = mongo_instance['GAMES']['games'].find_one({'user': update.message.from_user['username']})
+        games_record['games'] = {}
+        mongo_instance['GAMES']['games'].update_one({'user': update.message.from_user['username']}, {'$set': games_record})
+        await update.message.reply_text('Game list cleared')
+    else:
+        await update.message.reply_text(syntax_error + '/cleargameslist')
 
 async def getNews(update, context):
     if not context.args:
-        games = json.loads(redis_instance.get(update.message.from_user['username']))['games']
-        games_news_record = json.loads(redis_instance.get(update.message.from_user['username']))['games']
-        for game in games.values():
-            r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + str(get_game_id_by_name(game)) + '&count=3&maxlength=300&format=json')
-            print(r.json())
+        games = mongo_instance['GAMES']['games'].find_one({'user': update.message.from_user['username']})
+        for game in games['games'].values():
+            r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + str(get_game_id_by_name(game)) + '&count=3&maxlength=50000&format=json')
+            news_list = r.json()['appnews']['newsitems']
+            #added_news = []
+            for news in news_list:
+                news_message = parser(news)
+                await update.message.reply_text(news_message, parse_mode=ParseMode.HTML) #make message returned prettier
+            #     if games['last_news'] == {}:
+            #         games['last_news'] = {'0': news['gid']}
+            #     elif news['gid'] not in games['last_news'].values():
+            #         games['last_news'].update({str(int(max(games['last_news']))+1): news['gid']})
+            #         added_news.append(news)
+            # if added_news == []:
+            #     await update.message.reply_text('There are no new news for your games')
+            # else:
+            #     mongo_instance['GAMES']['games'].update_one({'user': update.message.from_user['username']}, {'$set': games})
+            #     for news_to_parse in added_news:
+            #         #news_to_print = parser(news_to_parse)
 
     else:
         await update.message.reply_text(syntax_error + '/getnews')
@@ -78,6 +99,9 @@ async def getNews(update, context):
 #     return r.json()
 
 async def getFavoriteGames(update, context):
-    games = list(json.loads(redis_instance.get(update.message.from_user['username']))['games'].values())
-    print(games)
-    await update.message.reply_text('Favorite Games: ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
+    if not context.args:
+        games_record = mongo_instance['GAMES']['games'].find_one({'user': update.message.from_user['username']})
+        games = list(games_record['games'].values())
+        await update.message.reply_text('Favorite Games: ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
+    else:
+        await update.message.reply_text(syntax_error + '/favoritegames')
