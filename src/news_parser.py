@@ -47,3 +47,4 @@ def create_message(news):
     news_date = "<b>Update date: " + str(news["date"]) + "</b>\n\n"
 
     return game_name + news_url + news_title + news_date
+  

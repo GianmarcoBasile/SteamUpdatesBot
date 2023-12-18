@@ -23,7 +23,6 @@ async def start(update, context):
         )
     await update.message.reply_text("Welcome to Steam News Bot!")
 
-
 async def addGame(update, context):
     try:
         if context.args:
