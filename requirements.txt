@@ -3,3 +3,4 @@ python-telegram-bot[job-queue]
 python-dotenv
 pymongo==3.12.3
 requests
+json_stream

@@ -23,6 +23,7 @@ async def start(update, context):
         )
     await update.message.reply_text("Welcome to Steam News Bot!")
 
+
 async def addGame(update, context):
     try:
         if context.args:
@@ -41,7 +42,6 @@ async def addGame(update, context):
                         games_record["games"].update(
                             {str(int(max(games_record["games"])) + 1): game_name}
                         )
-                    print(games_record)
                     mongo_instance["USERS"]["users"].update_one(
                         {"user": update.message.from_user["username"]},
                         {"$set": games_record},
@@ -108,7 +108,6 @@ async def getNews(update, context):
                 {"user": update.message.from_user["username"]}
             )
             for game in games["games"].values():
-                print(game)
                 r = requests.get(
                     "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid="
                     + str(get_game_id_by_name(game))
@@ -131,13 +130,11 @@ async def getNewsAuto(context):
     users = mongo_instance["USERS"]["users"].find()
     for user in users:
         for game in user["games"].values():
-            print(get_game_id_by_name(game))
             r = requests.get(
                 "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid="
                 + str(get_game_id_by_name(game))
                 + "&count=1&maxlength=50000&format=json"
             )
-            print(r.json())
             news_list = r.json()["appnews"]["newsitems"]
             for news in news_list:
                 news_message = parser(news)
