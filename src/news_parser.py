@@ -5,6 +5,7 @@ from utils import get_game_name_by_id
 
 
 def parser(news):
+    """Function that parses the news and returns a message"""
     news_to_return = {}
     news_to_return.update({"game": get_game_name_by_id(news["appid"])})
     news_to_return.update({"title": news["title"]})
@@ -16,6 +17,7 @@ def parser(news):
 
 
 def filter_contents(content):
+    """Function that filters the content"""
     string_to_remove = ""
     is_append = False
     # print(content)
@@ -28,6 +30,7 @@ def filter_contents(content):
 
 
 def crop_content(content):
+    """Function that crops the content"""
     index = 2048
     if len(content) > 2048:
         while content[index] != " ":
@@ -37,6 +40,7 @@ def crop_content(content):
 
 
 def create_message(news):
+    """Function that creates the message to send"""
     game_name = "Game news for " + news["game"] + "\n"
     news_url = '<a href ="' + news["url"] + '">Check full news here</a>' + "\n"
     news_title = "<b>" + news["title"] + "</b>" + "\n\n"

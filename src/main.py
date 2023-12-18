@@ -36,7 +36,9 @@ def main():
     )
     # Jobs: get news every 24 hours
     bot_instance.application.job_queue.run_once(getNewsAuto, 0)
-    bot_instance.application.job_queue.run_repeating(getNewsAuto, interval=10, first=0)
+    bot_instance.application.job_queue.run_repeating(
+        getNewsAuto, interval=86400, first=0
+    )
     # Run bot
     bot_instance.application.run_polling(1.0)
 
