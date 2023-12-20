@@ -15,30 +15,6 @@ def parser(news):
     # news_to_return.update({'content' : new_content})
     return create_message(news_to_return)
 
-
-def filter_contents(content):
-    """Function that filters the content"""
-    string_to_remove = ""
-    is_append = False
-    # print(content)
-    for char in content:
-        if char == "{":
-            is_append = True
-        if is_append:
-            string_to_remove += char
-    return content
-
-
-def crop_content(content):
-    """Function that crops the content"""
-    index = 2048
-    if len(content) > 2048:
-        while content[index] != " ":
-            index += 1
-        content = content[:index] + "..."
-    return content
-
-
 def create_message(news):
     """Function that creates the message to send"""
     game_name = "Game news for " + news["game"] + "\n"
