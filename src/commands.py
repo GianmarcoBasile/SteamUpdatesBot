@@ -4,7 +4,7 @@
 import json
 import requests
 from database import initialize_db as db
-from utils import get_game_list, get_game_id_by_name
+from utils import get_game_list, get_game_id_by_name, check_similarities
 from news_parser import parser
 from telegram.constants import ParseMode
 
@@ -52,7 +52,11 @@ async def addGame(update, context):
                 else:
                     await update.message.reply_text("The game is already in the list")
             else:
-                await update.message.reply_text("The game is not a steam game")
+                suggestions = check_similarities(game_name)
+                if len(suggestions) > 0:
+                    await update.message.reply_text("Game not found. Maybe you meant: " + suggestions)
+                else:
+                    await update.message.reply_text("The game is not a steam game")
         else:
             await update.message.reply_text(syntax_error + "/addgame <game_name>")
     except Exception as e:
