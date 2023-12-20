@@ -34,16 +34,20 @@ def get_game_name_by_id(game_id):
 
 def check_similarities(wrong_name):
     first_part = wrong_name.split()[0]
+    if len(wrong_name.split()) > 1:
+        second_part = wrong_name.split()[1]
+    else:
+        second_part = ""
     suggestions = []
     sugg_str = ""
     for game_id in app_list:
         game = get_game_name_by_id(game_id)
-        if game.startswith(first_part):
-            suggestions.append(game)
-        if len(suggestions) > max_suggestions:
-            break
-    for elem in suggestions:
-        sugg_str = sugg_str + elem + " , "
+        if game.startswith(first_part) and second_part in game:
+            if game not in suggestions:
+                suggestions.append(game)
+    suggestions.sort()
+    for elem in suggestions[:min(max_suggestions,len(suggestions))]:
+        sugg_str = sugg_str + elem + ", "
     if len(sugg_str) > 0:
         sugg_str= sugg_str[:-2]
     return sugg_str
