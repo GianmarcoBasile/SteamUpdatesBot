@@ -158,3 +158,47 @@ async def getFavoriteGames(update, context):
         )
     else:
         await update.message.reply_text(syntax_error + "/favoritegames")
+
+async def saleOnGamesAuto(context):
+    users = mongo_instance["USERS"]["users"].find()
+    for user in users:
+        for game in user["games"].values():
+            game_id = str(get_game_id_by_name(game))
+            r = requests.get(
+                "https://store.steampowered.com/api/appdetails/?appids="
+                + game_id +
+                "&currency=EUR"
+            )
+            req = r.json()[game_id]
+            if(req['success']):
+                curr_game = req['data']
+                if(curr_game['is_free']):
+                    continue
+                elif(curr_game['price_overview']['initial'] == curr_game['price_overview']['final']):
+                    await context.bot.send_message(user["chat_id"], game + ' is not on sale')
+                else:
+                    await context.bot.send_message(user["chat_id"], game + ' is on sale for ' + curr_game['price_overview']['final_formatted'])
+
+async def saleOnGames(update, context):
+    if not context.args:
+        games_record = mongo_instance["USERS"]["users"].find_one(
+            {"user": update.message.from_user["username"]}
+        )
+        for game in games_record['games'].values():
+            game_id = str(get_game_id_by_name(game))
+            r = requests.get(
+                "https://store.steampowered.com/api/appdetails/?appids="
+                + game_id +
+                "&currency=EUR"
+            )
+            req = r.json()[game_id]
+            if(req['success']):
+                curr_game = req['data']
+                if(curr_game['is_free']):
+                    await update.message.reply_text('The game ' + game + ' is free')
+                elif(curr_game['price_overview']['initial'] == curr_game['price_overview']['final']):
+                    await update.message.reply_text('The game ' + game + ' is not on sale. It costs ' + curr_game['price_overview']['final_formatted'])
+                else:
+                    await update.message.reply_text('The game ' + game + ' is on sale for ' + curr_game['price_overview']['final_formatted'] + ' instead of ' + curr_game['price_overview']['initial_formatted'])
+    else:
+        await update.message.reply_text(syntax_error + "/checksales")
