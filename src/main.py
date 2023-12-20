@@ -12,6 +12,8 @@ from commands import (
     clearGamesList,
     getNews,
     getNewsAuto,
+    saleOnGames,
+    saleOnGamesAuto,
 )
 
 load_dotenv()
@@ -26,6 +28,7 @@ def main():
     # Commands
     bot_instance.application.add_handler(CommandHandler("start", start))
     bot_instance.application.add_handler(CommandHandler("getnews", getNews))
+    bot_instance.application.add_handler(CommandHandler("checksales", saleOnGames))
     bot_instance.application.add_handler(CommandHandler("addgame", addGame))
     bot_instance.application.add_handler(
         CommandHandler("favoritegames", getFavoriteGames)
@@ -38,6 +41,11 @@ def main():
     bot_instance.application.job_queue.run_once(getNewsAuto, 0)
     bot_instance.application.job_queue.run_repeating(
         getNewsAuto, interval=86400, first=0
+    )
+    # Jobs: check for sales every 24 hours
+    bot_instance.application.job_queue.run_once(saleOnGamesAuto, 5)
+    bot_instance.application.job_queue.run_repeating(
+        saleOnGamesAuto, interval=86400, first=0
     )
     # Run bot
     bot_instance.application.run_polling(1.0)
