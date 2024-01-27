@@ -11,5 +11,5 @@ class TestAddGame(unittest.TestCase):
 
         self.assertEqual(
             parser(json.loads(news)),
-            'Game news for counter-strike 2\n<a href ="url">Check full news here</a>\n<b>title</b>\n\n<b>Update date: 1970-01-01 01:00:01</b>\n\n',
+            'Game news for counter-strike 2\n<a href ="url">Check full news here</a>\n<b>title</b>\n\n<b>Update date: 1970-01-01 00:00:01</b>\n\n',
         )
