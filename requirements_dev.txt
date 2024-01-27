@@ -1,5 +1,4 @@
 pytest
 pytest-mock
 pytest-cov
-pytest-asyncio
 pylint
