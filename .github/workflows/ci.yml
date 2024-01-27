@@ -32,4 +32,4 @@ jobs:
           pylint src
       - name: Test with pytest
         run: |
-          pytest --cov tests
+          pytest tests --cov
