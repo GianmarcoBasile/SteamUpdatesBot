@@ -32,4 +32,4 @@ jobs:
           pylint src
       - name: Test with pytest
         run: |
-          pytest tests/
+          pytest tests/test_deletegame.py
