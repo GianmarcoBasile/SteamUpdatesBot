@@ -1,7 +1,12 @@
 """Module providing Database API."""
+import pymongo
 
-import redis
+
 def initialize_db(host, port):
     """Initialize Database."""
-    db = redis.Redis(host=host, port=port, decode_responses=True)
-    return db
+    try:
+        mongo = pymongo.MongoClient(host + ":" + str(port) + "/", connectTimeoutMS=5000)
+    except pymongo.errors.ServerSelectionTimeoutError as e:
+        print("Error connecting to the database: " + str(e))
+        return None
+    return mongo

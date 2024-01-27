@@ -2,93 +2,230 @@
 """Module providing commands for the bot"""
 
 import json
+import requests
 from database import initialize_db as db
-from utils import get_game_list
+from utils import (
+    get_game_list,
+    get_game_id_by_name,
+    check_similarities,
+    get_games_record,
+    update_games_record,
+)
+from news_parser import parser
+from telegram.constants import ParseMode
 
-redis_instance = db('localhost', 6379)
+mongo_instance = db("mongodb://localhost", 27017)
 app_list = get_game_list()
-required_argument = 'This command requires one argument: '
+syntax_error = "The correct syntax for this command is: "
+
 
 async def start(update, context):
-    redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
-    await update.message.reply_text('Welcome to Steam News Bot!')
+    sender = update.message.from_user["username"]
+    if not mongo_instance["USERS"]["users"].find_one(
+        {"chat_id": update.message.chat_id}
+    ):
+        mongo_instance["USERS"]["users"].insert_one(
+            {"chat_id": update.message.chat_id, "user": sender, "games": {}}
+        )
+    await update.message.reply_text("Welcome to Steam News Bot!")
+
 
 async def addGame(update, context):
+    games_record = {}
     try:
         if context.args:
-            game_name = ' '.join(context.args).lower()
+            game_name = " ".join(context.args).lower()
             if game_name in app_list.values():
-                games_list = json.loads(redis_instance.get(update.message.from_user['username']))['games']
-                if not games_list:
-                    games_json = {'games': {0: game_name}}
-                    redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
-                    await update.message.reply_text('Games set to ' + game_name)
-                else:
-                    games = []
-                    games_json = json.loads(redis_instance.get(update.message.from_user['username']))
-                    if game_name not in games_json['games'].values():
-                        games_json['games'].update({len(games_json['games']): game_name})
-                        games = list(games_json['games'].values()) 
-                        redis_instance.set(update.message.from_user['username'], json.dumps(games_json))
-                        await update.message.reply_text('Games set to ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
+                try:
+                    games_record = get_games_record(
+                        update.message.from_user["username"]
+                    )
+                except Exception as e:
+                    print(e)
+                if game_name not in games_record["games"].values():
+                    if games_record["games"] == {}:
+                        games_record["games"] = {"0": game_name}
                     else:
-                        await update.message.reply_text('Game already in your favorites')
+                        games_record["games"].update(
+                            {str(int(max(games_record["games"])) + 1): game_name}
+                        )
+                    update_games_record(
+                        update.message.from_user["username"], games_record
+                    )
+                    await update.message.reply_text(
+                        "Game " + str(game_name) + " added to the list"
+                    )
+                else:
+                    await update.message.reply_text("The game is already in the list")
             else:
-                await update.message.reply_text('Game not found')
+                suggestions = check_similarities(game_name)
+                if len(suggestions) > 0:
+                    await update.message.reply_text(
+                        "Game not found. Maybe you meant: " + suggestions
+                    )
+                else:
+                    await update.message.reply_text("The game is not a steam game")
         else:
-            await update.message.reply_text(required_argument + '/addgame <game_name>')
+            await update.message.reply_text(syntax_error + "/addgame <game_name>")
     except Exception as e:
         print(e)
 
-async def deleteGame(update, context):    
+
+async def deleteGame(update, context):
     if context.args:
-        game_name = ' '.join(context.args).lower()
-        games_list = json.loads(redis_instance.get(update.message.from_user['username']))['games']
-        if not games_list:
-            await update.message.reply_text('The favourite game list is empty')
+        game_name = " ".join(context.args).lower()
+        try:
+            games_record = get_games_record(update.message.from_user["username"])
+        except Exception as e:
+            print(e)
+        if game_name in games_record["games"].values():
+            games_record["games"].pop(
+                str(list(games_record["games"].values()).index(game_name))
+            )
+            update_games_record(update.message.from_user["username"], games_record)
+            await update.message.reply_text(
+                "Game " + str(game_name) + " deleted from the list"
+            )
         else:
-            games_json = json.loads(redis_instance.get(update.message.from_user['username']))
-            if game_name in games_json['games'].values():
-                for key, value in games_json['games'].items():
-                    if value == game_name:
-                        games_json['games'].pop(key)
-                        break                
-                new_games_json = {'games':{}}
-                for key, value in games_json['games'].items():
-                    new_games_json['games'].update({len(new_games_json['games']): value})
-                redis_instance.set(update.message.from_user['username'], json.dumps(new_games_json))
-                await update.message.reply_text('Game ' + str(game_name)+ ' removed from the list')
-            else:
-                await update.message.reply_text('The game is not in the list')
+            await update.message.reply_text("The game is not in the list")
     else:
-        await update.message.reply_text(required_argument + '/deletegame <game_name>')
-    
-    
+        await update.message.reply_text(syntax_error + "/deletegame <game_name>")
+
+
 async def clearGamesList(update, context):
-    redis_instance.set(update.message.from_user['username'], json.dumps({'games': {}}))
-    await update.message.reply_text('Game list cleared')
+    if not context.args:
+        try:
+            games_record = get_games_record(update.message.from_user["username"])
+        except Exception as e:
+            print(e)
+        games_record["games"] = {}
+        update_games_record(update.message.from_user["username"], games_record)
+        await update.message.reply_text("Games list cleared")
+    else:
+        await update.message.reply_text(syntax_error + "/cleargameslist")
 
-# async def getNews(update, context):
-#     global game_id
-#     if context.args:
-#         r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + getGameIdByName(context.args[0]) + '&count=3&maxlength=300&format=json')
-#         print(r.json())
-#         await update.message.reply_text('News for game ' + context.args[0])
-#     elif not context.args and game_id != '':
-#         r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + game_id + '&count=3&maxlength=300&format=json')
-#         print(r.json())
-#         await update.message.reply_text('News for game ' + game_id)
-#     else:
-#         await update.message.reply_text('La sintassi del comando prevede che tu abbia prima settato un gioco oppure che tu inserisca un argomento: /getnews <game_id>')
 
-# async def getNews(context):
-#     global game_id
-#     print('gameid:', game_id)
-#     r = requests.get('http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=' + game_id + '&count=3&maxlength=300&format=json')
-#     print(r.json())
-#     return r.json()
+async def getNews(update, context):
+    if not context.args:
+        try:
+            games = get_games_record(update.message.from_user["username"])
+            for game in games["games"].values():
+                r = requests.get(
+                    "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid="
+                    + str(get_game_id_by_name(game))
+                    + "&count=5&maxlength=50000&format=json"
+                )
+                news_list = r.json()["appnews"]["newsitems"]
+                # added_news = []
+                for news in news_list:
+                    news_message = parser(news)
+                    await update.message.reply_text(
+                        news_message, parse_mode=ParseMode.HTML
+                    )
+        except Exception as e:
+            print(e)
+    else:
+        await update.message.reply_text(syntax_error + "/getnews")
+
+
+async def getNewsAuto(context):  # pragma: no cover
+    users = mongo_instance["USERS"]["users"].find()
+    for user in users:
+        for game in user["games"].values():
+            r = requests.get(
+                "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid="
+                + str(get_game_id_by_name(game))
+                + "&count=1&maxlength=50000&format=json"
+            )
+            news_list = r.json()["appnews"]["newsitems"]
+            for news in news_list:
+                news_message = parser(news)
+                await context.bot.send_message(
+                    user["chat_id"], news_message, parse_mode=ParseMode.HTML
+                )
+
 
 async def getFavoriteGames(update, context):
-    games = list(json.loads(redis_instance.get(update.message.from_user['username']))['games'].values())
-    print(games)
-    await update.message.reply_text('Favorite Games: ' + str(games).replace('[', '').replace(']', '').replace("'", ''))
+    if not context.args:
+        try:
+            games_record = get_games_record(update.message.from_user["username"])
+        except Exception as e:
+            print(e)
+        games = list(games_record["games"].values())
+        await update.message.reply_text(
+            "Favorite Games: "
+            + str(games).replace("[", "").replace("]", "").replace("'", "")
+        )
+    else:
+        await update.message.reply_text(syntax_error + "/favoritegames")
+
+
+async def saleOnGames(update, context):  # pragma: no cover
+    if not context.args:
+        games_record = mongo_instance["USERS"]["users"].find_one(
+            {"user": update.message.from_user["username"]}
+        )
+        for game in games_record["games"].values():
+            game_id = str(get_game_id_by_name(game))
+            r = requests.get(
+                "https://store.steampowered.com/api/appdetails/?appids="
+                + game_id
+                + "&currency=EUR"
+            )
+            req = r.json()[game_id]
+            if req["success"]:
+                curr_game = req["data"]
+                if curr_game["is_free"]:
+                    await update.message.reply_text("The game " + game + " is free")
+                elif (
+                    curr_game["price_overview"]["initial"]
+                    == curr_game["price_overview"]["final"]
+                ):
+                    await update.message.reply_text(
+                        "The game "
+                        + game
+                        + " is not on sale. It costs "
+                        + curr_game["price_overview"]["final_formatted"]
+                    )
+                else:
+                    await update.message.reply_text(
+                        "The game "
+                        + game
+                        + " is on sale for "
+                        + curr_game["price_overview"]["final_formatted"]
+                        + " instead of "
+                        + curr_game["price_overview"]["initial_formatted"]
+                    )
+    else:
+        await update.message.reply_text(syntax_error + "/checksales")
+
+
+async def saleOnGamesAuto(context):  # pragma: no cover
+    users = mongo_instance["USERS"]["users"].find()
+    for user in users:
+        for game in user["games"].values():
+            game_id = str(get_game_id_by_name(game))
+            r = requests.get(
+                "https://store.steampowered.com/api/appdetails/?appids="
+                + game_id
+                + "&currency=EUR"
+            )
+            req = r.json()[game_id]
+            if req["success"]:
+                curr_game = req["data"]
+                if curr_game["is_free"]:
+                    continue
+                elif (
+                    curr_game["price_overview"]["initial"]
+                    == curr_game["price_overview"]["final"]
+                ):
+                    await context.bot.send_message(
+                        user["chat_id"], game + " is not on sale"
+                    )
+                else:
+                    await context.bot.send_message(
+                        user["chat_id"],
+                        game
+                        + " is on sale for "
+                        + curr_game["price_overview"]["final_formatted"],
+                    )
