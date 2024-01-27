@@ -7,7 +7,6 @@ from src.commands import addGame
 
 
 class TestAddGame(unittest.IsolatedAsyncioTestCase):
-    @pytest.mark.asyncio
     async def test_addGame_no_args(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -21,7 +20,6 @@ class TestAddGame(unittest.IsolatedAsyncioTestCase):
             "The correct syntax for this command is: /addgame <game_name>"
         )
 
-    @pytest.mark.asyncio
     async def test_addGame_wrong_args_suggestion(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -36,7 +34,6 @@ class TestAddGame(unittest.IsolatedAsyncioTestCase):
             r"Game not found. Maybe you meant: (.*)counter-strike(.*)",
         )
 
-    @pytest.mark.asyncio
     async def test_addGame_wrong_args_no_suggestion(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -48,7 +45,6 @@ class TestAddGame(unittest.IsolatedAsyncioTestCase):
         await addGame(update, context)
         message.reply_text.assert_called_once_with("The game is not a steam game")
 
-    @pytest.mark.asyncio
     async def test_addGame_twice(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -62,7 +58,6 @@ class TestAddGame(unittest.IsolatedAsyncioTestCase):
             await addGame(update, context)
         message.reply_text.assert_called_once_with("The game is already in the list")
 
-    @pytest.mark.asyncio
     async def test_addGame_successful(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)

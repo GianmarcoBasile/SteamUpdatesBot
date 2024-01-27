@@ -7,7 +7,6 @@ from src.commands import getNews
 
 
 class TestGetNews(unittest.IsolatedAsyncioTestCase):
-    @pytest.mark.asyncio
     async def test_getnews_wrong_args(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
