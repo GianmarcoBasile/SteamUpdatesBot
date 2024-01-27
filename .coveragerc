@@ -1,0 +1,5 @@
+[run]
+omit = 
+    src/main.py
+    src/bot.py
+    src/database.py

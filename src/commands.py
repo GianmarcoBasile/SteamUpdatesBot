@@ -4,7 +4,13 @@
 import json
 import requests
 from database import initialize_db as db
-from utils import get_game_list, get_game_id_by_name, check_similarities
+from utils import (
+    get_game_list,
+    get_game_id_by_name,
+    check_similarities,
+    get_games_record,
+    update_games_record,
+)
 from news_parser import parser
 from telegram.constants import ParseMode
 
@@ -25,13 +31,14 @@ async def start(update, context):
 
 
 async def addGame(update, context):
+    games_record = {}
     try:
         if context.args:
             game_name = " ".join(context.args).lower()
             if game_name in app_list.values():
                 try:
-                    games_record = mongo_instance["USERS"]["users"].find_one(
-                        {"user": update.message.from_user["username"]}
+                    games_record = get_games_record(
+                        update.message.from_user["username"]
                     )
                 except Exception as e:
                     print(e)
@@ -42,9 +49,8 @@ async def addGame(update, context):
                         games_record["games"].update(
                             {str(int(max(games_record["games"])) + 1): game_name}
                         )
-                    mongo_instance["USERS"]["users"].update_one(
-                        {"user": update.message.from_user["username"]},
-                        {"$set": games_record},
+                    update_games_record(
+                        update.message.from_user["username"], games_record
                     )
                     await update.message.reply_text(
                         "Game " + str(game_name) + " added to the list"
@@ -54,7 +60,9 @@ async def addGame(update, context):
             else:
                 suggestions = check_similarities(game_name)
                 if len(suggestions) > 0:
-                    await update.message.reply_text("Game not found. Maybe you meant: " + suggestions)
+                    await update.message.reply_text(
+                        "Game not found. Maybe you meant: " + suggestions
+                    )
                 else:
                     await update.message.reply_text("The game is not a steam game")
         else:
@@ -67,18 +75,14 @@ async def deleteGame(update, context):
     if context.args:
         game_name = " ".join(context.args).lower()
         try:
-            games_record = mongo_instance["USERS"]["users"].find_one(
-                {"user": update.message.from_user["username"]}
-            )
+            games_record = get_games_record(update.message.from_user["username"])
         except Exception as e:
             print(e)
         if game_name in games_record["games"].values():
             games_record["games"].pop(
                 str(list(games_record["games"].values()).index(game_name))
             )
-            mongo_instance["USERS"]["users"].update_one(
-                {"user": update.message.from_user["username"]}, {"$set": games_record}
-            )
+            update_games_record(update.message.from_user["username"], games_record)
             await update.message.reply_text(
                 "Game " + str(game_name) + " deleted from the list"
             )
@@ -91,16 +95,12 @@ async def deleteGame(update, context):
 async def clearGamesList(update, context):
     if not context.args:
         try:
-            games_record = mongo_instance["USERS"]["users"].find_one(
-                {"user": update.message.from_user["username"]}
-            )
+            games_record = get_games_record(update.message.from_user["username"])
         except Exception as e:
             print(e)
         games_record["games"] = {}
-        mongo_instance["USERS"]["users"].update_one(
-            {"user": update.message.from_user["username"]}, {"$set": games_record}
-        )
-        await update.message.reply_text("Game list cleared")
+        update_games_record(update.message.from_user["username"], games_record)
+        await update.message.reply_text("Games list cleared")
     else:
         await update.message.reply_text(syntax_error + "/cleargameslist")
 
@@ -108,14 +108,12 @@ async def clearGamesList(update, context):
 async def getNews(update, context):
     if not context.args:
         try:
-            games = mongo_instance["USERS"]["users"].find_one(
-                {"user": update.message.from_user["username"]}
-            )
+            games = get_games_record(update.message.from_user["username"])
             for game in games["games"].values():
                 r = requests.get(
                     "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid="
                     + str(get_game_id_by_name(game))
-                    + "&count=1&maxlength=50000&format=json"
+                    + "&count=5&maxlength=50000&format=json"
                 )
                 news_list = r.json()["appnews"]["newsitems"]
                 # added_news = []
@@ -130,7 +128,7 @@ async def getNews(update, context):
         await update.message.reply_text(syntax_error + "/getnews")
 
 
-async def getNewsAuto(context):
+async def getNewsAuto(context):  # pragma: no cover
     users = mongo_instance["USERS"]["users"].find()
     for user in users:
         for game in user["games"].values():
@@ -150,9 +148,7 @@ async def getNewsAuto(context):
 async def getFavoriteGames(update, context):
     if not context.args:
         try:
-            games_record = mongo_instance["USERS"]["users"].find_one(
-                {"user": update.message.from_user["username"]}
-            )
+            games_record = get_games_record(update.message.from_user["username"])
         except Exception as e:
             print(e)
         games = list(games_record["games"].values())
@@ -163,46 +159,73 @@ async def getFavoriteGames(update, context):
     else:
         await update.message.reply_text(syntax_error + "/favoritegames")
 
-async def saleOnGamesAuto(context):
+
+async def saleOnGames(update, context):  # pragma: no cover
+    if not context.args:
+        games_record = mongo_instance["USERS"]["users"].find_one(
+            {"user": update.message.from_user["username"]}
+        )
+        for game in games_record["games"].values():
+            game_id = str(get_game_id_by_name(game))
+            r = requests.get(
+                "https://store.steampowered.com/api/appdetails/?appids="
+                + game_id
+                + "&currency=EUR"
+            )
+            req = r.json()[game_id]
+            if req["success"]:
+                curr_game = req["data"]
+                if curr_game["is_free"]:
+                    await update.message.reply_text("The game " + game + " is free")
+                elif (
+                    curr_game["price_overview"]["initial"]
+                    == curr_game["price_overview"]["final"]
+                ):
+                    await update.message.reply_text(
+                        "The game "
+                        + game
+                        + " is not on sale. It costs "
+                        + curr_game["price_overview"]["final_formatted"]
+                    )
+                else:
+                    await update.message.reply_text(
+                        "The game "
+                        + game
+                        + " is on sale for "
+                        + curr_game["price_overview"]["final_formatted"]
+                        + " instead of "
+                        + curr_game["price_overview"]["initial_formatted"]
+                    )
+    else:
+        await update.message.reply_text(syntax_error + "/checksales")
+
+
+async def saleOnGamesAuto(context):  # pragma: no cover
     users = mongo_instance["USERS"]["users"].find()
     for user in users:
         for game in user["games"].values():
             game_id = str(get_game_id_by_name(game))
             r = requests.get(
                 "https://store.steampowered.com/api/appdetails/?appids="
-                + game_id +
-                "&currency=EUR"
+                + game_id
+                + "&currency=EUR"
             )
             req = r.json()[game_id]
-            if(req['success']):
-                curr_game = req['data']
-                if(curr_game['is_free']):
+            if req["success"]:
+                curr_game = req["data"]
+                if curr_game["is_free"]:
                     continue
-                elif(curr_game['price_overview']['initial'] == curr_game['price_overview']['final']):
-                    await context.bot.send_message(user["chat_id"], game + ' is not on sale')
+                elif (
+                    curr_game["price_overview"]["initial"]
+                    == curr_game["price_overview"]["final"]
+                ):
+                    await context.bot.send_message(
+                        user["chat_id"], game + " is not on sale"
+                    )
                 else:
-                    await context.bot.send_message(user["chat_id"], game + ' is on sale for ' + curr_game['price_overview']['final_formatted'])
-
-async def saleOnGames(update, context):
-    if not context.args:
-        games_record = mongo_instance["USERS"]["users"].find_one(
-            {"user": update.message.from_user["username"]}
-        )
-        for game in games_record['games'].values():
-            game_id = str(get_game_id_by_name(game))
-            r = requests.get(
-                "https://store.steampowered.com/api/appdetails/?appids="
-                + game_id +
-                "&currency=EUR"
-            )
-            req = r.json()[game_id]
-            if(req['success']):
-                curr_game = req['data']
-                if(curr_game['is_free']):
-                    await update.message.reply_text('The game ' + game + ' is free')
-                elif(curr_game['price_overview']['initial'] == curr_game['price_overview']['final']):
-                    await update.message.reply_text('The game ' + game + ' is not on sale. It costs ' + curr_game['price_overview']['final_formatted'])
-                else:
-                    await update.message.reply_text('The game ' + game + ' is on sale for ' + curr_game['price_overview']['final_formatted'] + ' instead of ' + curr_game['price_overview']['initial_formatted'])
-    else:
-        await update.message.reply_text(syntax_error + "/checksales")
+                    await context.bot.send_message(
+                        user["chat_id"],
+                        game
+                        + " is on sale for "
+                        + curr_game["price_overview"]["final_formatted"],
+                    )

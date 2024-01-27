@@ -1,9 +1,10 @@
 """Module providing utility functions for the code."""
 
-import json
 import requests
+from database import initialize_db as db
 
 max_suggestions = 5
+
 
 def get_game_list():
     """Function that requests the list of games from the Steam API."""
@@ -32,6 +33,7 @@ def get_game_name_by_id(game_id):
     """Function that get the game name from the id."""
     return app_list[game_id]
 
+
 def check_similarities(wrong_name):
     first_part = wrong_name.split()[0]
     if len(wrong_name.split()) > 1:
@@ -46,8 +48,22 @@ def check_similarities(wrong_name):
             if game not in suggestions:
                 suggestions.append(game)
     suggestions.sort()
-    for elem in suggestions[:min(max_suggestions,len(suggestions))]:
+    for elem in suggestions[: min(max_suggestions, len(suggestions))]:
         sugg_str = sugg_str + elem + ", "
     if len(sugg_str) > 0:
-        sugg_str= sugg_str[:-2]
+        sugg_str = sugg_str[:-2]
     return sugg_str
+
+
+def get_games_record(username):  # pragma: no cover
+    """Function that get the games record from the database."""
+    mongo_instance = db("mongodb://localhost", 27017)
+    return mongo_instance["USERS"]["users"].find_one({"user": username})
+
+
+def update_games_record(username, games_record):  # pragma: no cover
+    """Function that updates the games record in the database."""
+    mongo_instance = db("mongodb://localhost", 27017)
+    mongo_instance["USERS"]["users"].update_one(
+        {"user": username}, {"$set": games_record}
+    )
