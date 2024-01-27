@@ -15,6 +15,7 @@ def parser(news):
     # news_to_return.update({'content' : new_content})
     return create_message(news_to_return)
 
+
 def create_message(news):
     """Function that creates the message to send"""
     game_name = "Game news for " + news["game"] + "\n"
@@ -23,4 +24,3 @@ def create_message(news):
     news_date = "<b>Update date: " + str(news["date"]) + "</b>\n\n"
 
     return game_name + news_url + news_title + news_date
-  

@@ -3,19 +3,20 @@
 import requests
 from database import initialize_db as db
 
-max_suggestions = 5
+MAX_SUGGESTION = 5
 
 
 def get_game_list():
     """Function that requests the list of games from the Steam API."""
     r = requests.get(
-        "https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json"
+        "https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json",
+        timeout=60,
     )
     app_list_tmp = r.json()["applist"]["apps"]
-    app_list = {}
+    _app_list = {}
     for x in app_list_tmp:
-        app_list.update({x["appid"]: x["name"].lower()})
-    return app_list
+        _app_list.update({x["appid"]: x["name"].lower()})
+    return _app_list
 
 
 app_list = get_game_list()
@@ -35,6 +36,7 @@ def get_game_name_by_id(game_id):
 
 
 def check_similarities(wrong_name):
+    """Function that checks if there are similar games in the database."""
     first_part = wrong_name.split()[0]
     if len(wrong_name.split()) > 1:
         second_part = wrong_name.split()[1]
@@ -48,7 +50,7 @@ def check_similarities(wrong_name):
             if game not in suggestions:
                 suggestions.append(game)
     suggestions.sort()
-    for elem in suggestions[: min(max_suggestions, len(suggestions))]:
+    for elem in suggestions[: min(MAX_SUGGESTION, len(suggestions))]:
         sugg_str = sugg_str + elem + ", "
     if len(sugg_str) > 0:
         sugg_str = sugg_str[:-2]
