@@ -7,7 +7,6 @@ from src.commands import deleteGame
 
 
 class TestDeleteGame(unittest.IsolatedAsyncioTestCase):
-    @pytest.mark.asyncio
     async def test_deleteGame_successful(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -27,7 +26,6 @@ class TestDeleteGame(unittest.IsolatedAsyncioTestCase):
             "Game counter-strike 2 deleted from the list"
         )
 
-    @pytest.mark.asyncio
     async def test_deleteGame_no_args(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -41,7 +39,6 @@ class TestDeleteGame(unittest.IsolatedAsyncioTestCase):
             "The correct syntax for this command is: /deletegame <game_name>"
         )
 
-    @pytest.mark.asyncio
     async def test_deleteGame_wrong_args(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)

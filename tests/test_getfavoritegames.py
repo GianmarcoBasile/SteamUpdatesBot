@@ -7,7 +7,6 @@ from src.commands import getFavoriteGames
 
 
 class TestGetFavoriteGamesList(unittest.IsolatedAsyncioTestCase):
-    @pytest.mark.asyncio
     async def test_getfavoritegames_successful(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -21,7 +20,6 @@ class TestGetFavoriteGamesList(unittest.IsolatedAsyncioTestCase):
             await getFavoriteGames(update, context)
         message.reply_text.assert_called_once_with("Favorite Games: counter-strike 2")
 
-    @pytest.mark.asyncio
     async def test_getfavoritegames_wrong_args(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)

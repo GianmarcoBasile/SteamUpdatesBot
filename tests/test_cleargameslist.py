@@ -7,7 +7,6 @@ from src.commands import clearGamesList
 
 
 class TestClearGamesList(unittest.IsolatedAsyncioTestCase):
-    @pytest.mark.asyncio
     async def test_cleargameslist_successful(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
@@ -25,7 +24,6 @@ class TestClearGamesList(unittest.IsolatedAsyncioTestCase):
                 await clearGamesList(update, context)
         message.reply_text.assert_called_once_with("Games list cleared")
 
-    @pytest.mark.asyncio
     async def test_cleargameslist_wrong_args(self):
         update = MagicMock(spec=Update)
         context = MagicMock(spec=CallbackContext)
