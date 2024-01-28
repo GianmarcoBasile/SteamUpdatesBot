@@ -23,7 +23,7 @@ Se si desidera eseguire i test sul codice, allora bisogna installare anche le di
 
 Una volta installate le dipendenze, basta avviare il bot da terminale con il comando:
 
-<code>python3 .\src\main.py</code>
+<code>python3 ./src/main.py</code>
 
 ## Guida all'uso
 
@@ -43,7 +43,7 @@ All'avvio del bot e ogni 24 ore a partire da quel momento, il bot invierà un me
 
 Per eseguire i test, basta eseguire il seguente comando da terminale:
 
-<code>python -m pytest .\tests\ </code>
+<code>python -m pytest ./tests/ </code>
 
 Per vedere la code coverage dei test bast invece eseguire il seguente comando da terminale:
 
