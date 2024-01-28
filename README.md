@@ -30,8 +30,8 @@ Una volta installate le dipendenze, basta avviare il bot da terminale con il com
 Una volta avviato il bot, basta aprire la chat del bot  ***SteamUpdatesBot*** e scrivere il comando **/start**.
 
 A questo punto il bot è pronto a ricevere uno dei seguenti comandi:
-- /addgame <\game_name>\ che permette di aggiungere un gioco alla lista dei preferiti (se il nome non è riconosciuto, viene tornata una lista di suggerimenti)
-- /deletegame <\game_name>\ che permette di eliminare un gioco dalla lista dei preferiti
+- /addgame \<game_name\> che permette di aggiungere un gioco alla lista dei preferiti (se il nome non è riconosciuto, viene tornata una lista di suggerimenti)
+- /deletegame \<game_name\> che permette di eliminare un gioco dalla lista dei preferiti
 - /favoritegames stampa la lista dei preferiti
 - /cleargameslist svuota la lista dei preferiti
 - /getnews ritorna le 5 notizie più recenti per ogni gioco nella lista dei preferiti
