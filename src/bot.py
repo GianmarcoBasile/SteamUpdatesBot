@@ -2,12 +2,16 @@
 """Module providing Bot API."""
 
 from telegram.ext import Application
-class Bot():
+
+
+class Bot:
     """Provides the bot API."""
+
     def __init__(self, token):
         """Bot Constructor."""
         self.token = token
         self.application = Application.builder().token(self.token).build()
-    def get_token(self):
+
+    def get_token(self) -> str:
         """Return the API Token."""
         return self.token

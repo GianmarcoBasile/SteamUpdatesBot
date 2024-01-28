@@ -3,23 +3,27 @@
 
 import json
 import requests
+from telegram import Update
 from database import initialize_db as db
 from utils import (
+    find_users,
     get_game_list,
     get_game_id_by_name,
     check_similarities,
     get_games_record,
+    jsonify,
     update_games_record,
 )
 from news_parser import parser
 from telegram.constants import ParseMode
+from telegram.ext import CallbackContext
 
 mongo_instance = db("mongodb://localhost", 27017)
 app_list = get_game_list()
 syntax_error = "The correct syntax for this command is: "
 
 
-async def start(update, context):
+async def start(update: Update, context: CallbackContext) -> None:
     sender = update.message.from_user["username"]
     if not mongo_instance["USERS"]["users"].find_one(
         {"chat_id": update.message.chat_id}
@@ -30,7 +34,7 @@ async def start(update, context):
     await update.message.reply_text("Welcome to Steam News Bot!")
 
 
-async def addGame(update, context):
+async def addGame(update: Update, context: CallbackContext) -> None:
     games_record = {}
     try:
         if context.args:
@@ -71,7 +75,7 @@ async def addGame(update, context):
         print(e)
 
 
-async def deleteGame(update, context):
+async def deleteGame(update: Update, context: CallbackContext) -> None:
     if context.args:
         game_name = " ".join(context.args).lower()
         try:
@@ -92,7 +96,7 @@ async def deleteGame(update, context):
         await update.message.reply_text(syntax_error + "/deletegame <game_name>")
 
 
-async def clearGamesList(update, context):
+async def clearGamesList(update: Update, context: CallbackContext) -> None:
     if not context.args:
         try:
             games_record = get_games_record(update.message.from_user["username"])
@@ -105,7 +109,7 @@ async def clearGamesList(update, context):
         await update.message.reply_text(syntax_error + "/cleargameslist")
 
 
-async def getNews(update, context):
+async def getNews(update: Update, context: CallbackContext) -> None:
     if not context.args:
         try:
             games = get_games_record(update.message.from_user["username"])
@@ -115,8 +119,7 @@ async def getNews(update, context):
                     + str(get_game_id_by_name(game))
                     + "&count=5&maxlength=50000&format=json"
                 )
-                news_list = r.json()["appnews"]["newsitems"]
-                # added_news = []
+                news_list = jsonify(r)["appnews"]["newsitems"]
                 for news in news_list:
                     news_message = parser(news)
                     await update.message.reply_text(
@@ -128,8 +131,8 @@ async def getNews(update, context):
         await update.message.reply_text(syntax_error + "/getnews")
 
 
-async def getNewsAuto(context):  # pragma: no cover
-    users = mongo_instance["USERS"]["users"].find()
+async def getNewsAuto(context: CallbackContext) -> None:
+    users = find_users()
     for user in users:
         for game in user["games"].values():
             r = requests.get(
@@ -145,7 +148,7 @@ async def getNewsAuto(context):  # pragma: no cover
                 )
 
 
-async def getFavoriteGames(update, context):
+async def getFavoriteGames(update: Update, context: CallbackContext) -> None:
     if not context.args:
         try:
             games_record = get_games_record(update.message.from_user["username"])
@@ -160,11 +163,9 @@ async def getFavoriteGames(update, context):
         await update.message.reply_text(syntax_error + "/favoritegames")
 
 
-async def saleOnGames(update, context):  # pragma: no cover
+async def saleOnGames(update: Update, context: CallbackContext) -> None:
     if not context.args:
-        games_record = mongo_instance["USERS"]["users"].find_one(
-            {"user": update.message.from_user["username"]}
-        )
+        games_record = get_games_record(update.message.from_user["username"])
         for game in games_record["games"].values():
             game_id = str(get_game_id_by_name(game))
             r = requests.get(
@@ -172,7 +173,7 @@ async def saleOnGames(update, context):  # pragma: no cover
                 + game_id
                 + "&currency=EUR"
             )
-            req = r.json()[game_id]
+            req = jsonify(r)[game_id]
             if req["success"]:
                 curr_game = req["data"]
                 if curr_game["is_free"]:
@@ -200,8 +201,8 @@ async def saleOnGames(update, context):  # pragma: no cover
         await update.message.reply_text(syntax_error + "/checksales")
 
 
-async def saleOnGamesAuto(context):  # pragma: no cover
-    users = mongo_instance["USERS"]["users"].find()
+async def saleOnGamesAuto(context: CallbackContext) -> None:
+    users = find_users()
     for user in users:
         for game in user["games"].values():
             game_id = str(get_game_id_by_name(game))
@@ -210,22 +211,25 @@ async def saleOnGamesAuto(context):  # pragma: no cover
                 + game_id
                 + "&currency=EUR"
             )
-            req = r.json()[game_id]
+            req = jsonify(r)[game_id]
             if req["success"]:
                 curr_game = req["data"]
                 if curr_game["is_free"]:
-                    continue
+                    await context.bot.send_message(
+                        user["chat_id"], "The game " + game + " is free"
+                    )
                 elif (
                     curr_game["price_overview"]["initial"]
                     == curr_game["price_overview"]["final"]
                 ):
                     await context.bot.send_message(
-                        user["chat_id"], game + " is not on sale"
+                        user["chat_id"], "The game " + game + " is not on sale"
                     )
                 else:
                     await context.bot.send_message(
                         user["chat_id"],
-                        game
+                        "The game "
+                        + game
                         + " is on sale for "
                         + curr_game["price_overview"]["final_formatted"],
                     )

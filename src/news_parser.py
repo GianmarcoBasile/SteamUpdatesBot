@@ -4,7 +4,7 @@ from datetime import datetime
 from utils import get_game_name_by_id
 
 
-def parser(news):
+def parser(news: dict) -> str:
     """Function that parses the news and returns a message"""
     news_to_return = {}
     news_to_return.update({"game": get_game_name_by_id(news["appid"])})
@@ -16,7 +16,7 @@ def parser(news):
     return create_message(news_to_return)
 
 
-def create_message(news):
+def create_message(news: dict) -> str:
     """Function that creates the message to send"""
     game_name = "Game news for " + news["game"] + "\n"
     news_url = '<a href ="' + news["url"] + '">Check full news here</a>' + "\n"
