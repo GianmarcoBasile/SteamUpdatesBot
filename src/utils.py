@@ -64,7 +64,7 @@ def get_games_record(username: str) -> dict:
 
 
 def find_users() -> dict:
-    """Function that get the games record from the database."""
+    """Function that return all the users in the database."""
     mongo_instance = db("mongodb://localhost", 27017)
     return mongo_instance["USERS"]["users"].find()
 
