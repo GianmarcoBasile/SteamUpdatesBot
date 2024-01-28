@@ -43,8 +43,8 @@ All'avvio del bot e ogni 24 ore a partire da quel momento, il bot invierà un me
 
 Per eseguire i test, basta eseguire il seguente comando da terminale:
 
-<code>python -m pytest .\tests\</code>
+<code>python -m pytest .\tests\ </code>
 
 Per vedere la code coverage dei test bast invece eseguire il seguente comando da terminale:
 
-<code>python -m pytest --cov src</code>
+<code>python -m pytest --cov src </code>
