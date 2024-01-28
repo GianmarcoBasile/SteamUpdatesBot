@@ -11,7 +11,7 @@ Il bot inoltre invia ogni giorno e automaticamente la notizia più recente per o
 
 ## Installazione
 
-Prima di procedere, assicurarsi di avere installato la versione di Python 3.10
+Prima di procedere, assicurarsi di avere installato la versione di Python 3.10 e di aver installato MongoDB (https://www.mongodb.com/try/download/community).
 
 Per avviare il bot, bisogna innanzitutto installare le dipendenze necessarie, lanciando il seguente comando da terminale:
 
