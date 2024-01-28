@@ -31,6 +31,7 @@ jobs:
         run: |
           pylint src
       - name: Test with pytest
-        env: ${{ secrets.API_KEY }}
+        env: 
+          API_KEY: ${{ secrets.API_KEY }}
         run: |
           pytest --cov src tests/ --cov-fail-under=75
